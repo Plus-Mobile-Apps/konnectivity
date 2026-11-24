@@ -1,11 +1,15 @@
 # Konnectivity
 
-A Kotlin multiplaform mobile library for checking the network connectivity status of a mobile device.
+A Kotlin Multiplatform library for checking the network connectivity status of a device.
 
 ## Supported Targets
 
-* Android
-* iOS - must use physical device to test, the iOS simulator does not work
+| Target | Implementation | Notes |
+|---|---|---|
+| Android | `ConnectivityManager` network callbacks | `minSdk` 21, initialized automatically with `androidx.startup` |
+| iOS (`iosArm64`, `iosSimulatorArm64`) | `SCNetworkReachability` | Must use a physical device to test, the iOS simulator does not report changes |
+| JVM (desktop / server) | Polls `java.net.NetworkInterface` every 3 seconds on a daemon thread | Can't tell link types apart, so any connection is `WIFI`. Use `Konnectivity(pollingIntervalMillis)` to change the interval |
+| JS (`js`) and Wasm (`wasmJs`), browser | `navigator.onLine`, `online` / `offline` events, and `navigator.connection` where supported | `CELLULAR` is only reported on Chromium-based browsers; everything else is `WIFI`. Outside a browser (Node.js) the device is assumed to be connected |
 
 ## Setup
 
@@ -24,14 +28,16 @@ Add Konnectivity to `commonMain` dependencies with the latest version.
 
 ```kotlin
 kotlin {
-    android()
-    ios()
+    androidTarget() // or android { } with the com.android.kotlin.multiplatform.library plugin
+    iosArm64()
+    iosSimulatorArm64()
+    jvm()
+    js { browser() }
+    wasmJs { browser() }
 
     sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation("com.plusmobileapps:konnectivity:$version")
-            }
+        commonMain.dependencies {
+            implementation("com.plusmobileapps:konnectivity:$version")
         }
     }
 }
@@ -77,6 +83,22 @@ GlobalScope.launch {
         }
     }
 }
+```
+
+## Building
+
+Requires JDK 17+. Versions are managed in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
+
+```bash
+./gradlew build
+```
+
+## Publishing
+
+Publishing uses the [vanniktech maven-publish plugin](https://vanniktech.github.io/gradle-maven-publish-plugin/central/) to the Maven Central Portal. Provide these Gradle properties (for example as `ORG_GRADLE_PROJECT_<name>` environment variables): `mavenCentralUsername`, `mavenCentralPassword`, `signingInMemoryKey`, `signingInMemoryKeyId`, `signingInMemoryKeyPassword`.
+
+```bash
+./gradlew publishToMavenCentral
 ```
 
 ## Resources

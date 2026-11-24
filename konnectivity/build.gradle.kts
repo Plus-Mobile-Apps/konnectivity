@@ -1,77 +1,91 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    kotlin("multiplatform")
-    kotlin("native.cocoapods")
-    id("com.android.library")
-    id("maven-publish")
-    id("convention.publication")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.cocoapods)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.maven.publish)
 }
 
 group = "com.plusmobileapps"
-version = Deps.LIBRARY_VERSION
+version = libs.versions.konnectivity.get()
 
 kotlin {
     android {
-        publishLibraryVariants("release", "debug")
+        namespace = "com.plusmobileapps.konnectivity"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
     }
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
+    jvm {
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
+    }
+    js {
+        browser()
+        nodejs()
+        binaries.library()
+    }
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        nodejs()
+        binaries.library()
+    }
 
     cocoapods {
-        summary = "A kotlin multiplatform mobile network connectivity checker"
+        summary = "A kotlin multiplatform network connectivity checker"
         homepage = "https://github.com/plusmobileapps/konnectivity"
-        version = Deps.LIBRARY_VERSION
-        ios.deploymentTarget = "14.1"
+        version = libs.versions.konnectivity.get()
+        ios.deploymentTarget = "15.0"
         framework {
             baseName = "konnectivity"
         }
     }
-    
+
     sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(Deps.Jetbrains.coroutines)
-            }
+        commonMain.dependencies {
+            implementation(libs.kotlinx.coroutines.core)
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(Deps.Jetbrains.coroutinesTesting)
-            }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
         }
-        val androidMain by getting {
-            dependencies {
-                implementation(Deps.Android.startUp)
-            }
-        }
-        val androidTest by getting
-        val iosX64Main by getting
-        val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
-        val iosMain by creating {
-            dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
-            iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
-        }
-        val iosX64Test by getting
-        val iosArm64Test by getting
-        val iosSimulatorArm64Test by getting
-        val iosTest by creating {
-            dependsOn(commonTest)
-            iosX64Test.dependsOn(this)
-            iosArm64Test.dependsOn(this)
-            iosSimulatorArm64Test.dependsOn(this)
+        androidMain.dependencies {
+            implementation(libs.androidx.startup)
         }
     }
 }
 
-android {
-    namespace = "com.plusmobileapps.konnectivity"
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    compileSdk = Deps.Android.compileSDK
-    defaultConfig {
-        minSdk = Deps.Android.minSDK
-        targetSdk = Deps.Android.targetSDK
+mavenPublishing {
+    publishToMavenCentral()
+    // Only sign when a key is configured so `publishToMavenLocal` works without secrets.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+        signAllPublications()
+    }
+    coordinates("com.plusmobileapps", "konnectivity", libs.versions.konnectivity.get())
+
+    pom {
+        name.set("Konnectivity")
+        description.set("A kotlin multiplatform library for checking the current network connectivity status")
+        url.set("https://github.com/plusmobileapps/konnectivity")
+        licenses {
+            license {
+                name.set("MIT")
+                url.set("https://opensource.org/licenses/MIT")
+            }
+        }
+        developers {
+            developer {
+                id.set("plusmobileapps")
+                name.set("Andrew Steinmetz")
+                email.set("andrew@plusmobileapps.com")
+            }
+        }
+        scm {
+            url.set("https://github.com/plusmobileapps/konnectivity")
+        }
     }
 }

@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package com.plusmobileapps.konnectivity
 
 import kotlinx.cinterop.COpaquePointer
