@@ -32,7 +32,7 @@ internal class KonnectivityStatusStoreProvider(
     private inner class ExecutorImpl : CoroutineExecutor<Nothing, Unit, State, Message, Nothing>(
         mainContext = mainDispatcher
     ) {
-        override fun executeAction(action: Unit, getState: () -> State) {
+        override fun executeAction(action: Unit) {
             scope.launch {
                 konnectivity.currentNetworkConnectionState.collect {
                     dispatch(Message.NetworkConnectionUpdated(it))
